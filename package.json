@@ -1,0 +1,18 @@
+{
+  "name": "youtube",
+  "version": "1.0.0",
+  "description": "This is a video sharing platform. Where you can upload your content in video format, apart from this you can like, share and comment to other peoples videos or content.",
+  "keywords": [
+    "javascript",
+    "react",
+    "backend",
+    "node"
+  ],
+  "license": "ISC",
+  "author": "Kanav Arora",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
