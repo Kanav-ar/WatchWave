@@ -1,7 +1,7 @@
 {
   "name": "youtube",
   "version": "1.0.0",
-  "description": "This is a video sharing platform. Where you can upload your content in video format, apart from this you can like, share and comment to other peoples videos or content.",
+  "description": "A full stack video sharing platform that allows users to upload and manage video content, engage with creators through likes, comments, and shares, and discover videos from other users.",
   "keywords": [
     "javascript",
     "react",
@@ -17,5 +17,9 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "mongoose": "^9.6.2"
   }
 }
