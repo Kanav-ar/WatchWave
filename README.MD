@@ -1,5 +1,5 @@
 # WatchWave
-A full stack video platform where users can share their video creations and can interact (like, share, comment) with other users content.  
+A full stack video platform where users can upload and share video creations and can interact with other user's content (like, share, comment) .  
 ## Features
 - User authentication and authorization
 - Video upload functionality
@@ -8,7 +8,7 @@ A full stack video platform where users can share their video creations and can 
 - JWT authorization
 - REST API integration
 ## Tech Stack 
-- Frontend: React.js, Tailwind CSS, Redux
-- Backend:  Node.js, Express.js
-- DataBase: MongoDB
+- ### Frontend: React.js, Tailwind CSS, Redux
+- ### Backend:  Node.js, Express.js
+- ### DataBase: MongoDB
 
