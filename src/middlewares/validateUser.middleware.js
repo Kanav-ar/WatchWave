@@ -5,8 +5,6 @@ const registerValidationSchema = z.object({
   email: z.string().trim().email("Invalid email address!"),
   fullname: z.string().trim().min(3,"Fullname required!"),
   password: z.string().min(8, "Password must be at least 8 characters"),
-  avatar: z.string(),
-  coverImage: z.string()
 });
 
 
