@@ -13,6 +13,4 @@ const validate = (req, res, next) => {
 
 export default validate;
 
-// Doubts
-// - structure
-// - what does this parse method return and how can i send the direct (exact) message at frontend
+
