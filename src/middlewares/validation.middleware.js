@@ -1,5 +1,5 @@
-import ApiError from "../utils/ApiError";
-import registerValidationSchema from "../validations/user.validation";
+import ApiError from "../utils/ApiError.js";
+import registerValidationSchema from "../validations/user.validation.js";
 
 const validateRegister = (req, res, next) => {
   const result = registerValidationSchema.safeParse(req.body);

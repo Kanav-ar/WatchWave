@@ -1,4 +1,5 @@
-// Signup validation
+import {z} from 'zod';
+// Signup validation schema
 const registerValidationSchema = z.object({
   username: z.string().trim().min(3, "Username must be more than 3 characters"),
   email: z.string().trim().email("Invalid email address!"),
