@@ -1,7 +1,7 @@
 import ApiError from "../utils/ApiError";
 import registerValidationSchema from "../validations/user.validation";
 
-const validate = (req, res, next) => {
+const validateRegister = (req, res, next) => {
   const result = registerValidationSchema.safeParse(req.body);
 
   if (!result.success) {
@@ -11,6 +11,6 @@ const validate = (req, res, next) => {
   next();
 };
 
-export default validate;
+export default validateRegister;
 
 

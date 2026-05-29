@@ -9,6 +9,7 @@ const registerUser = wrapAsync(async (req, res) => {
   // validate - done by zod
   
   // check username and email must be unique
+  
 
 
   // check images - cover and avatar
