@@ -40,7 +40,7 @@ const registerUser = wrapAsync(async (req, res) => {
   const newUser = await User.create({
     username: username.toLowerCase(),
     email: email.toLowerCase(),
-    fullname,
+    fullname, 
     password,
     avatar: avatar.url,
     coverImage: coverImage?.url || "",
@@ -53,7 +53,7 @@ const registerUser = wrapAsync(async (req, res) => {
   if (!createdUser) {
     throw new ApiError(500, "Something went wrong while registering the user");
   }
-
+  // response to frontend
   res
     .status(200)
     .json(new ApiResponse(200, createdUser, "User registered successfully!"));
