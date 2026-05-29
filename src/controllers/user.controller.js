@@ -1,6 +1,7 @@
 import { wrapAsync } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
 import ApiError from "../utils/ApiError.js";
+import ApiResponse from "../utils/ApiResponse.js";
 import uploadOnCloudinary from "../utils/cloudinary.js";
 
 const registerUser = wrapAsync(async (req, res) => {
@@ -36,19 +37,26 @@ const registerUser = wrapAsync(async (req, res) => {
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
 
   // make an object of user details to store it into db
-  const newUser = new User({
+  const newUser = await User.create({
     username: username.toLowerCase(),
     email: email.toLowerCase(),
     fullname,
     password,
     avatar: avatar.url,
     coverImage: coverImage?.url || "",
-  });  
+  });
 
-  let response = await newUser.save();
-  console.log(res)
+  const createdUser = await User.findById(newUser._id).select(
+    "-password -refreshToken",
+  );
 
+  if (!createdUser) {
+    throw new ApiError(500, "Something went wrong while registering the user");
+  }
 
+  res
+    .status(200)
+    .json(new ApiResponse(200, createdUser, "User registered successfully!"));
 });
 
 export { registerUser };
