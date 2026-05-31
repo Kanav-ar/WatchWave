@@ -34,7 +34,7 @@ const registerUser = wrapAsync(async (req, res) => {
   }
   // upload to cloudinary, get the url of avatar and cover image if uploaded
   const avatar = await uploadOnCloudinary(avatarLocalPath);
-  console.log(avatar)
+  
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
 
   // make an object of user details to store it into db
