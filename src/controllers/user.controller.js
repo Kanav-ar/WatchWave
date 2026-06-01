@@ -18,6 +18,7 @@ const generateAccessAndRefreshTokens = async function (userId) {
   }
 };
 
+// SIGNUP / REGISTER controller
 const registerUser = wrapAsync(async (req, res) => {
   // take data from frontend - username, fullname, password, email
   const { username, fullname, email, password } = req.body;
@@ -83,11 +84,12 @@ const registerUser = wrapAsync(async (req, res) => {
     .json(new ApiResponse(200, createdUser, "User registered successfully!"));
 });
 
+// LOGIN controller
 const loginUser = wrapAsync(async (req, res) => {
   // recieve username and password
   const { email, username, password } = req.body;
 
-  if (!username || !email) {
+  if (!username && !email) {
     throw new ApiError(400, "username or email is required");
   }
 
@@ -136,6 +138,7 @@ const loginUser = wrapAsync(async (req, res) => {
     );
 });
 
+// LOGOUT controller
 const logoutUser = wrapAsync(async (req, res) => {
   const userId = req.user._id;
 
