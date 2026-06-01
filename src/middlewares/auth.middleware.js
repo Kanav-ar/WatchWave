@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
-import { User } from "../models/user.model";
-import ApiError from "../utils/ApiError";
-import { wrapAsync } from "../utils/asyncHandler";
+import { User } from "../models/user.model.js";
+import ApiError from "../utils/ApiError.js";
+import { wrapAsync } from "../utils/asyncHandler.js";
 
 
 export const authenticateUser = wrapAsync(async function (req, _, next) {

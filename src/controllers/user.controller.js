@@ -87,7 +87,7 @@ const registerUser = wrapAsync(async (req, res) => {
 // LOGIN controller
 const loginUser = wrapAsync(async (req, res) => {
   // recieve username and password
-  const { email, username, password } = req.body;
+  const { email = null, username, password } = req.body;
 
   if (!username && !email) {
     throw new ApiError(400, "username or email is required");
@@ -142,10 +142,7 @@ const loginUser = wrapAsync(async (req, res) => {
 const logoutUser = wrapAsync(async (req, res) => {
   const userId = req.user._id;
 
-  await User.findByIdAndUpdate(
-    userId,
-    { refreshToken: undefined },
-  );
+  await User.findByIdAndUpdate(userId, { refreshToken: undefined });
 
   const cookieOptions = {
     httpOnly: true,
