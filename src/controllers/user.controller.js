@@ -123,11 +123,27 @@ const loginUser = wrapAsync(async (req, res) => {
     .status(200)
     .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
-    .json(new ApiResponse(200,{
-      user:loggedInUser,accessToken,refreshToken
-    },"User logged In successfully"))
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: loggedInUser,
+          accessToken,
+          refreshToken,
+        },
+        "User logged In successfully",
+      ),
+    );
 });
 
+const logoutUser = wrapAsync(async (req, res) => {
+  const userId = req.user._id;
 
+  await User.findByIdAndUpdate(
+    userId,
+    { refreshToken: undefined },
+    { new: true },
+  );
+});
 
-export { registerUser };
+export { registerUser, loginUser, logoutUser };
