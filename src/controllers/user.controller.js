@@ -13,7 +13,7 @@ const generateAccessAndRefreshTokens = async function (userId) {
 
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
-    return { accessToken, refreshToken };
+    return {};
   } catch (error) {
     throw new ApiError(500, "Something went wrong");
   }
@@ -88,7 +88,7 @@ const registerUser = wrapAsync(async (req, res) => {
 // LOGIN controller
 const loginUser = wrapAsync(async (req, res) => {
   // recieve username and password
-  const { email = null, username, password } = req.body;
+  const { email = null, username = null, password } = req.body;
 
   if (!username && !email) {
     throw new ApiError(400, "username or email is required");
@@ -171,6 +171,7 @@ const refreshAccessToken = wrapAsync(async (req, res) => {
   );
 
   const user = await User.findById(decodedToken?._id);
+
   if (!user) {
     throw new ApiError(401, "Invalid refresh token");
   }
@@ -183,10 +184,15 @@ const refreshAccessToken = wrapAsync(async (req, res) => {
     user._id,
   );
 
+  const cookieOptions = {
+    httpOnly: true,
+    secure: true,
+  };
+
   return res
     .status(200)
-    .cookie("accessToken", accessToken, { httpOnly: true, secure: true })
-    .cookie("refreshToken", newRefreshToken, { httpOnly: true, secure: true })
+    .cookie("accessToken", accessToken, cookieOptions)
+    .cookie("refreshToken", newRefreshToken, cookieOptions)
     .json(
       new ApiResponse(
         200,
@@ -197,6 +203,32 @@ const refreshAccessToken = wrapAsync(async (req, res) => {
         "Access token refreshed",
       ),
     );
+});
+
+// Change password when user is logged in
+const changePassword = wrapAsync(async (req, res) => {
+  const { oldPassword, newPassword, confirmPassword } = req.body;
+
+  if (newPassword !== confirmPassword) {
+    throw new ApiError(400, "New password and confirm password doesn't match");
+  }
+
+  const user = await User.findById(req.user?._id);
+  const isPasswordCorrect = user.isPasswordCorrect(newPassword);
+
+  if (!isPasswordCorrect) {
+    throw new ApiError(
+      400,
+      "The password you entered is not correct, Try again!",
+    );
+  }
+
+  user.password = newPassword;
+  await user.save();
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password updated successfully"));
 });
 
 export { registerUser, loginUser, logoutUser, refreshAccessToken };
