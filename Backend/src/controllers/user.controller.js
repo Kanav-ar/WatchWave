@@ -13,7 +13,7 @@ const generateAccessAndRefreshTokens = async function (userId) {
 
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
-    return {};
+    return { accessToken, refreshToken };
   } catch (error) {
     throw new ApiError(500, "Something went wrong");
   }
@@ -103,17 +103,17 @@ const loginUser = wrapAsync(async (req, res) => {
     throw new ApiError(404, "User doesn't exist");
   }
 
-  // if correct - generate both access and refresh tokens
   const isPasswordValid = await user.isPasswordCorrect(password);
   if (!isPasswordValid) {
     throw new ApiError(401, "Invalid user credentials");
   }
-
-  // send these token to frontend via cookies
+  
+  // if correct - generate access and refresh tokens
   const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
     user._id,
   );
-
+  
+  // send these tokens to frontend via cookies
   const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken",
   );
@@ -205,7 +205,7 @@ const refreshAccessToken = wrapAsync(async (req, res) => {
     );
 });
 
-// Change password when user is logged in
+// To change password when user is logged in
 const changePassword = wrapAsync(async (req, res) => {
   const { oldPassword, newPassword, confirmPassword } = req.body;
 
@@ -224,13 +224,23 @@ const changePassword = wrapAsync(async (req, res) => {
   }
 
   user.password = newPassword;
-  await user.save();
+  await user.save({ validateBeforeSave: false });
 
   res
     .status(200)
     .json(new ApiResponse(200, {}, "Password updated successfully"));
 });
 
+// Forgot password
+const forgotPassword = wrapAsync(async(req,res)=>{
 
+});
+
+// Get current user
+const getCurrentUser = wrapAsync(async (req, res) => {
+  res
+    .status(200)
+    .json(new ApiResponse(200, req.user, "Current user fetched successfully"));
+});
 
 export { registerUser, loginUser, logoutUser, refreshAccessToken };

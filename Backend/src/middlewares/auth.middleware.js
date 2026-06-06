@@ -11,7 +11,7 @@ export const authenticateUser = wrapAsync(async function (req, _, next) {
       req.header("Authorization")?.replace("Bearer ", "");
 
     if (!accessToken) {
-      throw new ApiError(400, "Invalid access token");
+      throw new ApiError(401, "Invalid access token");
     }
 
     const decodedToken = jwt.verify(
