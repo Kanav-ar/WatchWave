@@ -245,7 +245,9 @@ const getCurrentUser = wrapAsync(async (req, res) => {
 const updateUserDetails = wrapAsync(async (req, res) => {
   const { username, email, fullname } = req.body;
 
-  const user = await User.findById(req.user._id);
+  const user = await User.findById(req.user._id).select(
+    "-password -refreshToken",
+  );
 
   if (!user) {
     throw new ApiError(404, "User not found");
@@ -256,7 +258,7 @@ const updateUserDetails = wrapAsync(async (req, res) => {
   const updates = {};
   const errors = {};
 
-  // Username
+  // Username update
   if (username && username !== user.username) {
     const sixtyDays = 30 * 24 * 60 * 60 * 1000;
 
@@ -299,15 +301,12 @@ const updateUserDetails = wrapAsync(async (req, res) => {
     await user.save();
   }
 
-  const updatedUser = await User.findById(user._id).select(
-    "-password -refreshToken",
-  );
   return res
     .status(200)
     .json(
       new ApiResponse(
         200,
-        { updatedFields: updates, failedFields: errors },
+        { updatedFields: updates, failedFields: errors, user },
         "Updated successfully",
       ),
     );
@@ -315,10 +314,6 @@ const updateUserDetails = wrapAsync(async (req, res) => {
 
 // File update (avatar, cover image)
 const updateUserAvatar = wrapAsync(async (req, res) => {
-  if (!req.user) {
-    throw new ApiError(400, "You must be logged in to update ");
-  }
-
   const avatarLocalPath = req.file?.path;
 
   if (!avatarLocalPath) {
@@ -327,20 +322,54 @@ const updateUserAvatar = wrapAsync(async (req, res) => {
 
   const responseFromCloudinary = await uploadOnCloudinary(avatarLocalPath);
 
-  if(!responseFromCloudinary?.url){
-    throw new ApiError(500, "Failed to update avatar try again later")
+  if (!responseFromCloudinary?.url) {
+    throw new ApiError(500, "Failed to update avatar try again later");
   }
 
-  const user = await User.findById(req.user._id);
+  const user = await User.findById(req.user._id).select(
+    "-password -refreshToken",
+  );
 
   if (!user) {
-    throw new ApiError(404, "User not found")
+    throw new ApiError(404, "User not found");
   }
 
   user.avatar = responseFromCloudinary.url;
   await user.save({ validateBeforeSave: false });
 
-  res.status(200).json(new ApiResponse(200, {}, "Avatar updated successfully"));
+  res
+    .status(200)
+    .json(new ApiResponse(200, { user }, "Avatar updated successfully"));
+});
+
+const updateUserCoverImage = wrapAsync(async (req, res) => {
+  const coverImageLocalPath = req.file?.path;
+  if (!coverImageLocalPath) {
+    throw new ApiError(404, "File not found");
+  }
+
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+
+  if (!coverImage?.url) {
+    throw new ApiError(
+      500,
+      "Something went wrong while updating the cover image",
+    );
+  }
+
+  const user = await User.findById(req.user._id).select(
+    "-password -refreshToken",
+  );
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  user.coverImage = coverImage.url;
+  await user.save({ validateBeforeSave: false });
+
+  res
+  .status(200).json(new ApiResponse(200, user, "Cover Image updated"));
 });
 export {
   registerUser,
@@ -348,4 +377,6 @@ export {
   logoutUser,
   refreshAccessToken,
   updateUserDetails,
+  updateUserAvatar,
+  updateUserCoverImage,
 };
