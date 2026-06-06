@@ -45,6 +45,14 @@ const userSchema = new Schema(
     refreshToken: {
       type: String,
     },
+    usernameLastUpdatedAt:{
+      type: Date,
+      default: Date.now()
+    },
+    emailLastUpdatedAt:{
+      type: Date,
+      default: Date.now()
+    },
   },
   {
     timestamps: true,

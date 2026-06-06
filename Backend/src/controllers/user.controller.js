@@ -107,12 +107,12 @@ const loginUser = wrapAsync(async (req, res) => {
   if (!isPasswordValid) {
     throw new ApiError(401, "Invalid user credentials");
   }
-  
+
   // if correct - generate access and refresh tokens
   const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
     user._id,
   );
-  
+
   // send these tokens to frontend via cookies
   const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken",
@@ -232,9 +232,7 @@ const changePassword = wrapAsync(async (req, res) => {
 });
 
 // Forgot password
-const forgotPassword = wrapAsync(async(req,res)=>{
-
-});
+const forgotPassword = wrapAsync(async (req, res) => {});
 
 // Get current user
 const getCurrentUser = wrapAsync(async (req, res) => {
@@ -243,4 +241,111 @@ const getCurrentUser = wrapAsync(async (req, res) => {
     .json(new ApiResponse(200, req.user, "Current user fetched successfully"));
 });
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken };
+// Update user details
+const updateUserDetails = wrapAsync(async (req, res) => {
+  const { username, email, fullname } = req.body;
+
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const now = Date.now();
+
+  const updates = {};
+  const errors = {};
+
+  // Username
+  if (username && username !== user.username) {
+    const sixtyDays = 30 * 24 * 60 * 60 * 1000;
+
+    const diff = now - user.usernameLastChangedAt.getTime();
+
+    if (diff >= sixtyDays) {
+      user.username = username;
+      user.usernameLastChangedAt = new Date();
+
+      updates.username = "Updated successfully";
+    } else {
+      errors.username = "Username can only be changed once every 60 days";
+    }
+  }
+
+  // Email
+  if (email && email !== user.email) {
+    const thirtyDays = 60 * 24 * 60 * 60 * 1000;
+
+    const diff = now - user.emailLastChangedAt.getTime();
+
+    if (diff >= thirtyDays) {
+      user.email = email;
+      user.emailLastChangedAt = new Date();
+
+      updates.email = "Updated successfully";
+    } else {
+      errors.email = "Email can only be changed once every 30 days";
+    }
+  }
+
+  // Fullname
+  if (fullname && fullname !== user.fullname) {
+    user.fullname = fullname;
+    updates.fullname = "Updated successfully";
+  }
+
+  // Save only if something changed
+  if (Object.keys(updates).length > 0) {
+    await user.save();
+  }
+
+  const updatedUser = await User.findById(user._id).select(
+    "-password -refreshToken",
+  );
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { updatedFields: updates, failedFields: errors },
+        "Updated successfully",
+      ),
+    );
+});
+
+// File update (avatar, cover image)
+const updateUserAvatar = wrapAsync(async (req, res) => {
+  if (!req.user) {
+    throw new ApiError(400, "You must be logged in to update ");
+  }
+
+  const avatarLocalPath = req.file?.path;
+
+  if (!avatarLocalPath) {
+    throw new ApiError(400, "Provide a file to update");
+  }
+
+  const responseFromCloudinary = await uploadOnCloudinary(avatarLocalPath);
+
+  if(!responseFromCloudinary?.url){
+    throw new ApiError(500, "Failed to update avatar try again later")
+  }
+
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    throw new ApiError(404, "User not found")
+  }
+
+  user.avatar = responseFromCloudinary.url;
+  await user.save({ validateBeforeSave: false });
+
+  res.status(200).json(new ApiResponse(200, {}, "Avatar updated successfully"));
+});
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  updateUserDetails,
+};
