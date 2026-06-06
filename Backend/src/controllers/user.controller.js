@@ -2,7 +2,7 @@ import { wrapAsync } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
-import uploadOnCloudinary from "../utils/cloudinary.js";
+import {uploadOnCloudinary, deleteFromCloudinary} from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
 
 const generateAccessAndRefreshTokens = async function (userId) {
@@ -49,7 +49,7 @@ const registerUser = wrapAsync(async (req, res) => {
     Array.isArray(req.files.coverImage) &&
     req.files.coverImage.length > 0
   ) {
-    coverImageLocalPath = req.files.coverImage[0].path;
+    coverImageLocalPath = req.files?.coverImage[0].path;
   }
 
   if (!avatarLocalPath) {
@@ -66,8 +66,8 @@ const registerUser = wrapAsync(async (req, res) => {
     email: email.toLowerCase(),
     fullname,
     password,
-    avatar: avatar.url,
-    coverImage: coverImage?.url || "",
+    avatar: { url: avatar.url, public_id: avatar.public_id },
+    coverImage: { url: coverImage?.url || "", public_id: coverImage?.public_id || "" },
   });
 
   // check if the user exists in db before sending it to frontend
@@ -231,8 +231,20 @@ const changePassword = wrapAsync(async (req, res) => {
     .json(new ApiResponse(200, {}, "Password updated successfully"));
 });
 
-// Forgot password
-const forgotPassword = wrapAsync(async (req, res) => {});
+// Forgot password without log in
+
+// const forgotPassword = wrapAsync(async (req, res) => {
+//   const { email } = req.body;
+
+//   const user = await User.findOne({ email });
+
+//   if (!user) {
+//     throw new ApiError(404, "Invalid email");
+//   }
+
+//   // Yet to implement
+
+// });
 
 // Get current user
 const getCurrentUser = wrapAsync(async (req, res) => {
@@ -312,7 +324,7 @@ const updateUserDetails = wrapAsync(async (req, res) => {
     );
 });
 
-// File update (avatar, cover image)
+// Avatar update
 const updateUserAvatar = wrapAsync(async (req, res) => {
   const avatarLocalPath = req.file?.path;
 
@@ -320,9 +332,9 @@ const updateUserAvatar = wrapAsync(async (req, res) => {
     throw new ApiError(400, "Provide a file to update");
   }
 
-  const responseFromCloudinary = await uploadOnCloudinary(avatarLocalPath);
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
 
-  if (!responseFromCloudinary?.url) {
+  if (!avatar?.url) {
     throw new ApiError(500, "Failed to update avatar try again later");
   }
 
@@ -334,7 +346,13 @@ const updateUserAvatar = wrapAsync(async (req, res) => {
     throw new ApiError(404, "User not found");
   }
 
-  user.avatar = responseFromCloudinary.url;
+  // To delete the url of old image from the cloud server
+  if (user.avatar?.public_id) {
+    await deleteFromCloudinary(user.avatar.public_id);
+  }
+
+  user.avatar.url = avatar.url;
+  user.avatar.public_id = avatar.public_id;
   await user.save({ validateBeforeSave: false });
 
   res
@@ -342,8 +360,10 @@ const updateUserAvatar = wrapAsync(async (req, res) => {
     .json(new ApiResponse(200, { user }, "Avatar updated successfully"));
 });
 
+// Cover image update
 const updateUserCoverImage = wrapAsync(async (req, res) => {
   const coverImageLocalPath = req.file?.path;
+
   if (!coverImageLocalPath) {
     throw new ApiError(404, "File not found");
   }
@@ -365,12 +385,19 @@ const updateUserCoverImage = wrapAsync(async (req, res) => {
     throw new ApiError(404, "User not found");
   }
 
-  user.coverImage = coverImage.url;
+  // To delete the url of old image from the cloud server
+  if (user.coverImage?.public_id) {
+    await deleteFromCloudinary(user.coverImage.public_id);
+  }
+
+  user.coverImage.url = coverImage.url;
+  user.coverImage.public_id = coverImage.public_id;
   await user.save({ validateBeforeSave: false });
 
-  res
-  .status(200).json(new ApiResponse(200, user, "Cover Image updated"));
+
+  res.status(200).json(new ApiResponse(200, user, "Cover Image updated"));
 });
+
 export {
   registerUser,
   loginUser,
