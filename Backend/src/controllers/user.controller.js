@@ -2,7 +2,10 @@ import { wrapAsync } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
-import {uploadOnCloudinary, deleteFromCloudinary} from "../utils/cloudinary.js";
+import {
+  uploadOnCloudinary,
+  deleteFromCloudinary,
+} from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
 
 const generateAccessAndRefreshTokens = async function (userId) {
@@ -67,7 +70,10 @@ const registerUser = wrapAsync(async (req, res) => {
     fullname,
     password,
     avatar: { url: avatar.url, public_id: avatar.public_id },
-    coverImage: { url: coverImage?.url || "", public_id: coverImage?.public_id || "" },
+    coverImage: {
+      url: coverImage?.url || "",
+      public_id: coverImage?.public_id || "",
+    },
   });
 
   // check if the user exists in db before sending it to frontend
@@ -394,10 +400,75 @@ const updateUserCoverImage = wrapAsync(async (req, res) => {
   user.coverImage.public_id = coverImage.public_id;
   await user.save({ validateBeforeSave: false });
 
-
   res.status(200).json(new ApiResponse(200, user, "Cover Image updated"));
 });
 
+// Get channel
+const getUserChannelProfile = wrapAsync(async (req, res) => {
+  const { username } = req.params;
+
+  if (!username?.trim()) {
+    throw new ApiError(400, "Invalid username");
+  }
+
+  const channel = await User.aggregate([
+    {
+      $match: { username: username?.toLowerCase() },
+    },
+    {
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "channel",
+        as: "subscribers",
+      },
+    },
+    {
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "subscribedTo",
+      },
+    },
+    {
+      $addFields: {
+        subscriberCount: {
+          $size: "$subscribers",
+        },
+        subscribedToCount: {
+          $size: "$subscribedTo",
+        },
+        isSubscribed: {
+          $cond: {
+            if: { $in: [req.user._id, "$subscribers.subscriber"] },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        username: 1,
+        fullname: 1,
+        subscriberCount: 1,
+        subscribedToCount: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        coverImage: 1,
+      },
+    },
+  ]);
+
+  if (!channel?.length) {
+    throw new ApiError(404, "channel doesn't exist");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, channel[0], "User channel fetched"));
+});
 export {
   registerUser,
   loginUser,
