@@ -1,5 +1,6 @@
 import { wrapAsync } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
+import { Video } from "../models/video.model.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import {
@@ -7,6 +8,7 @@ import {
   deleteFromCloudinary,
 } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
+import { Schema } from "mongoose";
 
 const generateAccessAndRefreshTokens = async function (userId) {
   try {
@@ -330,7 +332,7 @@ const updateUserDetails = wrapAsync(async (req, res) => {
     );
 });
 
-// Avatar update
+// Update Avatar
 const updateUserAvatar = wrapAsync(async (req, res) => {
   const avatarLocalPath = req.file?.path;
 
@@ -366,7 +368,7 @@ const updateUserAvatar = wrapAsync(async (req, res) => {
     .json(new ApiResponse(200, { user }, "Avatar updated successfully"));
 });
 
-// Cover image update
+// Update Cover image
 const updateUserCoverImage = wrapAsync(async (req, res) => {
   const coverImageLocalPath = req.file?.path;
 
@@ -403,7 +405,7 @@ const updateUserCoverImage = wrapAsync(async (req, res) => {
   res.status(200).json(new ApiResponse(200, user, "Cover Image updated"));
 });
 
-// Get channel
+// Get channel information
 const getUserChannelProfile = wrapAsync(async (req, res) => {
   const { username } = req.params;
 
@@ -469,12 +471,101 @@ const getUserChannelProfile = wrapAsync(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, channel[0], "User channel fetched"));
 });
+
+// Update user's watch history
+const updateUserWatchHistory = wrapAsync(async (req, res) => {
+  const { videoId } = req.params;
+  const userId = req.user._id;
+
+  if (!videoId) {
+    throw new ApiError(400, "Missing video id");
+  }
+
+  const video = await Video.findById(videoId);
+
+  if (!video) {
+    throw new ApiError(400, "Invalid video id");
+  }
+
+  await User.findByIdAndUpdate(userId, {
+    $pull: { watchHistory: videoId },
+  });
+
+  await User.findByIdAndUpdate(userId, {
+    $push: { watchHistory: { $each: [videoId], $position: 0 } },
+  });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Watch history updated successfully"));
+});
+
+// Get user's Watch history
+const getUserWatchHistory = wrapAsync(async (req, res) => {
+  const userWatchHistory = await User.aggregate([
+    {
+      $match: {
+        _id: Schema.Types.ObjectId(req.user._id),
+      },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
+                {
+                  $project: {
+                    username: 1,
+                    fullname: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            $addFields: {
+              owner: {
+                $first: "$owner",
+              },
+            },
+          },
+        ],
+      },
+    },
+  ]);
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        userWatchHistory[0].watchHistory,
+        "Watch history fetched successfully",
+      ),
+    );
+});
+
 export {
   registerUser,
   loginUser,
   logoutUser,
   refreshAccessToken,
+  changePassword,
+  getCurrentUser,
   updateUserDetails,
   updateUserAvatar,
   updateUserCoverImage,
+  getUserChannelProfile,
+  updateUserWatchHistory,
+  getUserWatchHistory,
 };
