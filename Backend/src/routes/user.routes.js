@@ -20,9 +20,7 @@ import { authenticateUser } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-
-router.post(
-  "/register",
+router.route("/register").post(
   upload.fields([
     {
       name: "avatar",
@@ -37,37 +35,47 @@ router.post(
   registerUser,
 );
 
-router.post("/login", loginUser);
+router.route("/login").post(loginUser);
 
-// secured routes
-router.post("/logout", authenticateUser, logoutUser);
+router.route("/logout").post(authenticateUser, logoutUser);
 
-router.post("/refresh-token", refreshAccessToken);
+router.route("/refresh-token").post(refreshAccessToken);
 
-router.post("/change-password", authenticateUser, changePassword);
+router.route("/change-password").post(
+  authenticateUser,
+  changePassword,
+);
 
-router.get("/current-user", authenticateUser, getCurrentUser);
+router.route("/current-user").get(
+  authenticateUser,
+  getCurrentUser,
+);
 
-router.patch("/update-account", authenticateUser, updateUserDetails);
+router.route("/update-account").patch(
+  authenticateUser,
+  updateUserDetails,
+);
 
-router.patch(
-  "/avatar",
+router.route("/avatar").patch(
   authenticateUser,
   upload.single("avatar"),
   updateUserAvatar,
 );
 
-router.patch(
-  "/cover-image",
+router.route("/cover-image").patch(
   authenticateUser,
   upload.single("coverImage"),
   updateUserCoverImage,
 );
 
-router.get("/channel/:username", authenticateUser, getUserChannelProfile);
+router.route("/channel/:username").get(
+  authenticateUser,
+  getUserChannelProfile,
+);
 
-router.patch("/watch-history", updateUserWatchHistory);
-
-router.get("/watch-history", getUserWatchHistory);
+router
+  .route("/watch-history")
+  .get(getUserWatchHistory)
+  .patch(updateUserWatchHistory);
 
 export default router;
