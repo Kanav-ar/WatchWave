@@ -26,13 +26,18 @@ const userSchema = new Schema(
       index: true,
     },
     avatar: {
-      url: String, // Cloudinary url
-      public_id: String,
-      required: true,
+      url: {
+        type: String,
+        required: true,
+      },
+      public_id: {
+        type: String,
+        required: true,
+      },
     },
     coverImage: {
       url: String, // Cloudinary url
-      public_id: String
+      public_id: String,
     },
     watchHistory: [
       {
@@ -47,13 +52,13 @@ const userSchema = new Schema(
     refreshToken: {
       type: String,
     },
-    usernameLastUpdatedAt:{
+    usernameLastUpdatedAt: {
       type: Date,
-      default: Date.now()
+      default: Date.now,
     },
-    emailLastUpdatedAt:{
+    emailLastUpdatedAt: {
       type: Date,
-      default: Date.now()
+      default: Date.now,
     },
   },
   {

@@ -10,6 +10,7 @@ import {
   refreshAccessToken,
   registerUser,
   updateUserAvatar,
+  updateUserCoverImage,
   updateUserDetails,
   updateUserWatchHistory,
 } from "../controllers/user.controller.js";
@@ -60,7 +61,7 @@ router.patch(
   "/cover-image",
   authenticateUser,
   upload.single("coverImage"),
-  updateUserAvatar,
+  updateUserCoverImage,
 );
 
 router.get("/channel/:username", authenticateUser, getUserChannelProfile);

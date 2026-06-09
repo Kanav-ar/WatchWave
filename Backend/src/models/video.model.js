@@ -37,7 +37,7 @@ const videoSchema = new Schema(
     },
   },
   {
-    timestamps,
+    timestamps:true,
   },
 );
 videoSchema.plugin(mongooseAggregatePaginate);

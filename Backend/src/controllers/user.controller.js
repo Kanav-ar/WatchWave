@@ -18,6 +18,7 @@ const generateAccessAndRefreshTokens = async function (userId) {
 
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
+
     return { accessToken, refreshToken };
   } catch (error) {
     throw new ApiError(500, "Something went wrong");
@@ -151,7 +152,11 @@ const loginUser = wrapAsync(async (req, res) => {
 const logoutUser = wrapAsync(async (req, res) => {
   const userId = req.user._id;
 
-  await User.findByIdAndUpdate(userId, { refreshToken: undefined });
+  await User.findByIdAndUpdate(
+    userId,
+    { $unset: { refreshToken: 1 } },
+    { new: true },
+  );
 
   const cookieOptions = {
     httpOnly: true,
@@ -188,10 +193,11 @@ const refreshAccessToken = wrapAsync(async (req, res) => {
     throw new ApiError(401, "Invalid or expired refresh token");
   }
 
-  const { accessToken, newRefreshToken } = await generateAccessAndRefreshTokens(
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
     user._id,
   );
 
+  console.log(refreshToken);
   const cookieOptions = {
     httpOnly: true,
     secure: true,
@@ -200,13 +206,13 @@ const refreshAccessToken = wrapAsync(async (req, res) => {
   return res
     .status(200)
     .cookie("accessToken", accessToken, cookieOptions)
-    .cookie("refreshToken", newRefreshToken, cookieOptions)
+    .cookie("refreshToken", refreshToken, cookieOptions)
     .json(
       new ApiResponse(
         200,
         {
           accessToken,
-          refreshToken: newRefreshToken,
+          newRefreshToken: refreshToken,
         },
         "Access token refreshed",
       ),
@@ -217,12 +223,17 @@ const refreshAccessToken = wrapAsync(async (req, res) => {
 const changePassword = wrapAsync(async (req, res) => {
   const { oldPassword, newPassword, confirmPassword } = req.body;
 
+  console.log("oldpass:", oldPassword);
+  console.log("newpass:", newPassword);
+  console.log("confpass:", confirmPassword);
+
   if (newPassword !== confirmPassword) {
     throw new ApiError(400, "New password and confirm password doesn't match");
   }
 
   const user = await User.findById(req.user?._id);
-  const isPasswordCorrect = user.isPasswordCorrect(newPassword);
+  console.log(user);
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
 
   if (!isPasswordCorrect) {
     throw new ApiError(
@@ -280,11 +291,14 @@ const updateUserDetails = wrapAsync(async (req, res) => {
 
   // Username update
   if (username && username !== user.username) {
-    const sixtyDays = 30 * 24 * 60 * 60 * 1000;
+    const thrityDays = 30 * 24 * 60 * 60 * 1000;
 
+    if (!user.usernameLastChangedAt) {
+      user.usernameLastChangedAt = new Date(0);
+    }
     const diff = now - user.usernameLastChangedAt.getTime();
 
-    if (diff >= sixtyDays) {
+    if (diff >= thrityDays) {
       user.username = username;
       user.usernameLastChangedAt = new Date();
 
@@ -296,11 +310,14 @@ const updateUserDetails = wrapAsync(async (req, res) => {
 
   // Email
   if (email && email !== user.email) {
-    const thirtyDays = 60 * 24 * 60 * 60 * 1000;
+    const sixtyDays = 60 * 24 * 60 * 60 * 1000;
 
+    if (!user.emailLastChangedAt) {
+      user.emailLastChangedAt = new Date(0);
+    }
     const diff = now - user.emailLastChangedAt.getTime();
 
-    if (diff >= thirtyDays) {
+    if (diff >= sixtyDays) {
       user.email = email;
       user.emailLastChangedAt = new Date();
 
@@ -359,9 +376,10 @@ const updateUserAvatar = wrapAsync(async (req, res) => {
     await deleteFromCloudinary(user.avatar.public_id);
   }
 
-  user.avatar.url = avatar.url;
+  user.avatar.url = avatar.secure_url;
   user.avatar.public_id = avatar.public_id;
   await user.save({ validateBeforeSave: false });
+
 
   res
     .status(200)
@@ -398,7 +416,7 @@ const updateUserCoverImage = wrapAsync(async (req, res) => {
     await deleteFromCloudinary(user.coverImage.public_id);
   }
 
-  user.coverImage.url = coverImage.url;
+  user.coverImage.url = coverImage.secure_url;
   user.coverImage.public_id = coverImage.public_id;
   await user.save({ validateBeforeSave: false });
 
