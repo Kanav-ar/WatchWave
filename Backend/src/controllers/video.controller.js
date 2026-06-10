@@ -14,7 +14,7 @@ const getAllVideos = wrapAsync(async (req, res) => {
 const publishAVideo = wrapAsync(async (req, res) => {
   const { title, description } = req.body;
   //  get video, upload to cloudinary, create video
-  
+
   const userId = req.user._id;
 
   if (!userId) {
@@ -80,14 +80,86 @@ const getVideoById = wrapAsync(async (req, res) => {
 });
 
 const updateVideo = wrapAsync(async (req, res) => {
-  const { videoId } = req.params;
   // update video details like title, description, thumbnail
-  
+  const { videoId } = req.params;
+
+  const { title, description } = req.body;
+
+  const updates = {};
+
+  if (!videoId) {
+    throw new ApiError(400, "Missing Video Id");
+  }
+
+  if (!mongoose.isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid video id format");
+  }
+
+  const video = await Video.findById(videoId);
+
+  if (!video) {
+    throw new ApiError(404, "Video not found");
+  }
+
+  // Check if the request is from the owner
+  if (video.owner.toString() !== req.user._id.toString()) {
+    throw new ApiError(403, "You are not authorized to update this video");
+  }
+
+  // Title
+  if (title) {
+    video.title = title;
+    updates.title = "Title updated!";
+  }
+  // Description
+  if (description) {
+    video.description = description;
+    updates.description = "Description updated!";
+  }
+  // Thumbnail
+  const thumbnailLocalPath = req.file?.path;
+
+  if (thumbnailLocalPath) {
+    const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
+
+    // delete old thumbnail from cloudinary
+    if (thumbnail) {
+      if (video.thumbnail?.public_id) {
+        await deleteFromCloudinary(video.thumbnail?.public_id);
+      }
+
+      updates.thumbnail = "Thumbnail updated!";
+      video.thumbnail.url = thumbnail.url;
+      video.thumbnail.public_id = thumbnail.public_id;
+    }
+  }
+  // Save the document only when something is updated
+  if (Object.keys(updates).length > 0) {
+    await video.save();
+  } else {
+    throw new ApiError(400, "No updates provided");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { updates, video },
+        "Video details updated successfully",
+      ),
+    );
 });
 
 const deleteVideo = wrapAsync(async (req, res) => {
   const { videoId } = req.params;
   // delete video
+
+  if (!videoId || !mongoose.isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid video id");
+  }
+
+
 });
 
 const togglePublishStatus = wrapAsync(async (req, res) => {

@@ -302,7 +302,7 @@ const updateUserDetails = wrapAsync(async (req, res) => {
       user.username = username;
       user.usernameLastChangedAt = new Date();
 
-      updates.username = "Updated successfully";
+      updates.username = "Username updated successfully";
     } else {
       errors.username = "Username can only be changed once every 60 days";
     }
@@ -321,7 +321,7 @@ const updateUserDetails = wrapAsync(async (req, res) => {
       user.email = email;
       user.emailLastChangedAt = new Date();
 
-      updates.email = "Updated successfully";
+      updates.email = "Email Updated successfully";
     } else {
       errors.email = "Email can only be changed once every 30 days";
     }
@@ -330,7 +330,7 @@ const updateUserDetails = wrapAsync(async (req, res) => {
   // Fullname
   if (fullname && fullname !== user.fullname) {
     user.fullname = fullname;
-    updates.fullname = "Updated successfully";
+    updates.fullname = "Fullname updated successfully";
   }
 
   // Save only if something changed
@@ -373,7 +373,7 @@ const updateUserAvatar = wrapAsync(async (req, res) => {
 
   // To delete the url of old image from the cloud server
   if (user.avatar?.public_id) {
-    await deleteFromCloudinary(user.avatar.public_id);
+    await deleteFromCloudinary(user.avatar?.public_id);
   }
 
   user.avatar.url = avatar.secure_url;
