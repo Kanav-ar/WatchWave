@@ -66,6 +66,24 @@ const publishAVideo = wrapAsync(async (req, res) => {
 const getVideoById = wrapAsync(async (req, res) => {
   const { videoId } = req.params;
   // get video by id
+
+  if (!videoId) {
+    throw new ApiError(404, "Please provide a video id");
+  }
+
+  if (!mongoose.isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid video id format");
+  }
+
+  const video = await Video.findById(videoId).populate("owner");
+
+  if (!video) {
+    throw new ApiError(404, "Invalid video id");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, video, "Video fetched successfully"));
 });
 
 const updateVideo = wrapAsync(async (req, res) => {
