@@ -187,6 +187,36 @@ const deleteVideo = wrapAsync(async (req, res) => {
 
 const togglePublishStatus = wrapAsync(async (req, res) => {
   const { videoId } = req.params;
+
+  if (!mongoose.isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid video id");
+  }
+
+  const video = await Video.findById(videoId);
+
+  if (!video) {
+    throw new ApiError(404, "Video not found");
+  }
+
+  if (video.owner.toString() !== req.user._id.toString()) {
+    throw new ApiError(
+      403,
+      "Unauthorized request! You are not the publisher of this video",
+    );
+  }
+
+  video.isPublished = !video.isPublished;
+  await video.save();
+
+  const status = video.isPublished
+    ? "Video is published"
+    : "Video is now private";
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, { isPublished: video.isPublished }, `${status}`),
+    );
 });
 
 export {
