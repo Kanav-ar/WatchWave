@@ -72,7 +72,7 @@ const registerUser = wrapAsync(async (req, res) => {
     email: email.toLowerCase(),
     fullname,
     password,
-    avatar: { url: avatar.url, public_id: avatar.public_id },
+    avatar: { url: avatar?.url, public_id: avatar?.public_id },
     coverImage: {
       url: coverImage?.url || "",
       public_id: coverImage?.public_id || "",
