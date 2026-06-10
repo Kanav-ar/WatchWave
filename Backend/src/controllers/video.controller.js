@@ -4,7 +4,10 @@ import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { wrapAsync } from "../utils/asyncHandler.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import {
+  deleteFromCloudinary,
+  uploadOnCloudinary,
+} from "../utils/cloudinary.js";
 
 const getAllVideos = wrapAsync(async (req, res) => {
   const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
@@ -57,12 +60,8 @@ const publishAVideo = wrapAsync(async (req, res) => {
 });
 
 const getVideoById = wrapAsync(async (req, res) => {
-  const { videoId } = req.params;
   // get video by id
-
-  if (!videoId) {
-    throw new ApiError(404, "Please provide a video id");
-  }
+  const { videoId } = req.params;
 
   if (!mongoose.isValidObjectId(videoId)) {
     throw new ApiError(400, "Invalid video id format");
@@ -86,10 +85,6 @@ const updateVideo = wrapAsync(async (req, res) => {
   const { title, description } = req.body;
 
   const updates = {};
-
-  if (!videoId) {
-    throw new ApiError(400, "Missing Video Id");
-  }
 
   if (!mongoose.isValidObjectId(videoId)) {
     throw new ApiError(400, "Invalid video id format");
@@ -155,11 +150,39 @@ const deleteVideo = wrapAsync(async (req, res) => {
   const { videoId } = req.params;
   // delete video
 
-  if (!videoId || !mongoose.isValidObjectId(videoId)) {
+  if (!mongoose.isValidObjectId(videoId)) {
     throw new ApiError(400, "Invalid video id");
   }
 
+  const video = await Video.findById(videoId);
 
+  if (!video) {
+    throw new ApiError(404, "Something went wrong");
+  }
+
+  // Check owner before deletion
+  if (video.owner.toString() !== req.user._id.toString()) {
+    throw new ApiError(
+      401,
+      "Unauthorized request! You are not the publisher of this video",
+    );
+  }
+
+  // Delete video and thumbnail from cloudinary
+  if (video.videoFile?.public_id) {
+    await deleteFromCloudinary(video.videoFile.public_id);
+  }
+
+  if (video.thumbnail?.public_id) {
+    await deleteFromCloudinary(video.thumbnail.public_id);
+  }
+
+  // Delete from DB
+  await Video.findByIdAndDelete(videoId);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Video Deleted successfully"));
 });
 
 const togglePublishStatus = wrapAsync(async (req, res) => {
