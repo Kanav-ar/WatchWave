@@ -9,6 +9,7 @@ import {
 } from "../controllers/video.controller.js";
 import { authenticateUser } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
+import { validateVideoPublish } from "../middlewares/validation.middleware.js";
 
 const router = Router();
 router.use(authenticateUser);
@@ -27,6 +28,7 @@ router
         maxCount: 1,
       },
     ]),
+    validateVideoPublish,
     publishAVideo,
   );
 

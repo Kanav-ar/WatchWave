@@ -15,7 +15,7 @@ import {
   updateUserWatchHistory,
 } from "../controllers/user.controller.js";
 import { z } from "zod";
-import validateRegister from "../middlewares/validation.middleware.js";
+import {validateRegister} from "../middlewares/validation.middleware.js";
 import { authenticateUser } from "../middlewares/auth.middleware.js";
 
 const router = Router();

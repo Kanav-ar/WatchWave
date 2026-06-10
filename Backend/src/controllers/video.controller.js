@@ -14,14 +14,7 @@ const getAllVideos = wrapAsync(async (req, res) => {
 const publishAVideo = wrapAsync(async (req, res) => {
   const { title, description } = req.body;
   //  get video, upload to cloudinary, create video
-  if (!title) {
-    throw new ApiError(400, "Title can't be empty");
-  }
-
-  if (!description) {
-    throw new ApiError(400, "Description can't be empty");
-  }
-
+  
   const userId = req.user._id;
 
   if (!userId) {
@@ -89,6 +82,7 @@ const getVideoById = wrapAsync(async (req, res) => {
 const updateVideo = wrapAsync(async (req, res) => {
   const { videoId } = req.params;
   // update video details like title, description, thumbnail
+  
 });
 
 const deleteVideo = wrapAsync(async (req, res) => {
