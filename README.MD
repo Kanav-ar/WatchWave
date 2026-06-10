@@ -10,6 +10,7 @@ A full stack video platform where users can upload and share video creations and
 - Responsive UI
 - JWT authorization
 - REST API integration
+- Interactive user posts
 
 ---
 
@@ -19,6 +20,4 @@ A full stack video platform where users can upload and share video creations and
 - ### DataBase: MongoDB
 
 ---
-
-
 
