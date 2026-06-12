@@ -3,4 +3,5 @@ dashboard.controller.js
 healthCheck.controller.js
 like.controller.js
 post.controller.js
+playlist.controller.js
 subscription.controller.js

@@ -12,6 +12,76 @@ import {
 const getAllVideos = wrapAsync(async (req, res) => {
   const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
   // get all videos based on query, sort, pagination
+
+  const pageNumber = Number(page);
+  const limitNumber = Number(limit);
+
+  const skip = (pageNumber - 1) * limitNumber;
+
+  const filter = {
+    isPublished: true,
+  };
+
+  const sort = {};
+
+  // If user if exist check its validity
+  if (userId) {
+    if (!mongoose.isValidObjectId(userId)) {
+      throw new ApiError(400, "Not a valid user id");
+    }
+    filter.owner = userId;
+  }
+
+  if (query?.trim()) {
+    const escapedSearch = query.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    filter.$or = [
+      {
+        title: {
+          $regex: escapedSearch,
+          $options: "i",
+        },
+      },
+      {
+        description: {
+          $regex: escapedSearch,
+          $options: "i",
+        },
+      },
+    ];
+  }
+
+  if (sortType && sortBy) {
+    const sortOrder = sortType.trim() === "asc" ? 1 : -1;
+    const sortField = sortBy.trim();
+
+    sort[sortField] = sortOrder;
+  } else {
+    // Default sorting
+    sort.createdAt = -1;
+  }
+
+  const videos = await Video.find(filter)
+    .populate("owner","username avatar")
+    .sort(sort)
+    .skip(skip)
+    .limit(limit);
+
+  const totalVideos = await Video.countDocuments(filter);
+  const totalPages = Math.ceil(totalVideos / limitNumber);
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        videos,
+        page: pageNumber,
+        limit: limitNumber,
+        totalVideos,
+        totalPages,
+      },
+      "Videos fetched successfully",
+    ),
+  );
 });
 
 const publishAVideo = wrapAsync(async (req, res) => {
