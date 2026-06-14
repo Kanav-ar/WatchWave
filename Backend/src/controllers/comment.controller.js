@@ -9,6 +9,40 @@ const getVideoComments = wrapAsync(async (req, res) => {
   // get all comments for a video
   const { videoId } = req.params;
   const { page = 1, limit = 10 } = req.query;
+
+  const skip = (Number(page) - 1) * Number(limit);
+  if (!mongoose.isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid video id");
+  }
+  // Check if the video exist in the db
+  const video = await Video.findById(videoId);
+
+  if (!video) {
+    throw new ApiError(404, "The video doesn't exist!");
+  }
+
+  const comments = await Comment.find({ video: videoId })
+    .populate("owner", "username avatar")
+    .skip(skip)
+    .limit(limit)
+    .sort({ createdAt: -1 });
+
+  const totalComments = await Comment.countDocuments({
+    video: videoId,
+  });
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        comments,
+        totalComments,
+        currentPage: page,
+        totalPages: Math.ceil(totalComments / limit),
+      },
+      comments.length > 0 ? "Comments fetched successfully" : "No comments",
+    ),
+  );
 });
 
 const addComment = wrapAsync(async (req, res) => {
@@ -99,7 +133,9 @@ const deleteComment = wrapAsync(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, {deleteComment}, "Comment deleted successfully"));
+    .json(
+      new ApiResponse(200, { deleteComment }, "Comment deleted successfully"),
+    );
 });
 
 export { getVideoComments, addComment, updateComment, deleteComment };
