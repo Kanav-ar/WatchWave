@@ -289,6 +289,40 @@ const togglePublishStatus = wrapAsync(async (req, res) => {
     );
 });
 
+const incrementVideoView = wrapAsync(async (req, res) => {
+  const { videoId } = req.params;
+
+  if (!mongoose.isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid video id");
+  }
+
+  const video = await Video.findByIdAndUpdate(
+    videoId,
+    {
+      $inc: {
+        views: 1,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  if (!video) {
+    throw new ApiError(404, "Video not found");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        views: video.views,
+      },
+      "View counted successfully"
+    )
+  );
+});
+
 export {
   getAllVideos,
   publishAVideo,
@@ -296,4 +330,5 @@ export {
   updateVideo,
   deleteVideo,
   togglePublishStatus,
+  incrementVideoView
 };
