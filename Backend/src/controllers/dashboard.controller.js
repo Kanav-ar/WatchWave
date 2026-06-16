@@ -16,20 +16,117 @@ const getChannelStats = wrapAsync(async (req, res) => {
     throw new ApiError(400, "Invalid channel id");
   }
 
-  const channel = await User.aggregate([
+  const channelStats = await User.aggregate([
     { $match: { _id: new mongoose.Types.ObjectId(userId) } },
     {
       $lookup: {
         from: "videos",
-        localField: "_id",
-        foreignField: "owner",
-        as: "videos",
-       
+        let: { ownerId: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: ["$owner", "$$ownerId"],
+              },
+            },
+          },
+          {
+            $lookup: {
+              from: "likes",
+              localField: "_id",
+              foreignField: "video",
+              as: "likesOnVideo",
+            },
+          },
+          {
+            $addFields: {
+              likesCount: {
+                $size: "$likesOnVideo",
+              },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              totalViews: { $sum: "$views" }, // COunt total views
+              totalVideos: { $sum: 1 }, // count total videos
+              totalLikes: { $sum: "$likesCount" },
+            },
+          },
+          {
+            $project: {
+              totalVideos: 1,
+              totalViews: 1,
+              totalLikes: 1,
+            },
+          },
+        ],
+        as: "videosStats",
       },
     },
-    {},
-    {},
+    {
+      // for finding total subscribers
+      $lookup: {
+        from: "subscriptions",
+        let: { channelId: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: ["$channel", "$$channelId"],
+              },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              totalSubscribers: { $sum: 1 },
+            },
+          },
+          {
+            $project: {
+              totalSubscribers: 1,
+            },
+          },
+        ],
+        as: "subscriberStats",
+      },
+    },
+    {
+      $addFields: {
+        videosStats: {
+          $arrayElemAt: ["$videosStats", 0],
+        },
+        subscriberStats: {
+          $arrayElemAt: ["$subscriberStats", 0],
+        },
+      },
+    },
+    {
+      $project: {
+        username: 1,
+        avatar: 1,
+        totalViews: "$videosStats.totalViews",
+        totalVideos: "$videosStats.totalVideos",
+        totalLikes: "$videosStats.totalLikes",
+        totalSubscribers: "$subscriberStats.totalSubscribers",
+      },
+    },
   ]);
+
+  if (!channelStats.length) {
+    throw new ApiError(404, "Channel not found");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        channelStats[0],
+        "Channel stats fetched successfully",
+      ),
+    );
 });
 
 const getChannelVideos = wrapAsync(async (req, res) => {
