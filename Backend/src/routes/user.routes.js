@@ -14,8 +14,7 @@ import {
   updateUserDetails,
   updateUserWatchHistory,
 } from "../controllers/user.controller.js";
-import { z } from "zod";
-import {validateRegister} from "../middlewares/validation.middleware.js";
+import { validateRegister } from "../middlewares/validation.middleware.js";
 import { authenticateUser } from "../middlewares/auth.middleware.js";
 
 const router = Router();
@@ -41,37 +40,21 @@ router.route("/logout").post(authenticateUser, logoutUser);
 
 router.route("/refresh-token").post(refreshAccessToken);
 
-router.route("/change-password").post(
-  authenticateUser,
-  changePassword,
-);
+router.route("/change-password").post(authenticateUser, changePassword);
 
-router.route("/current-user").get(
-  authenticateUser,
-  getCurrentUser,
-);
+router.route("/current-user").get(authenticateUser, getCurrentUser);
 
-router.route("/update-account").patch(
-  authenticateUser,
-  updateUserDetails,
-);
+router.route("/update-account").patch(authenticateUser, updateUserDetails);
 
-router.route("/avatar").patch(
-  authenticateUser,
-  upload.single("avatar"),
-  updateUserAvatar,
-);
+router
+  .route("/avatar")
+  .patch(authenticateUser, upload.single("avatar"), updateUserAvatar);
 
-router.route("/cover-image").patch(
-  authenticateUser,
-  upload.single("coverImage"),
-  updateUserCoverImage,
-);
+router
+  .route("/cover-image")
+  .patch(authenticateUser, upload.single("coverImage"), updateUserCoverImage);
 
-router.route("/channel/:username").get(
-  authenticateUser,
-  getUserChannelProfile,
-);
+router.route("/channel/:username").get(authenticateUser, getUserChannelProfile);
 
 router
   .route("/watch-history")

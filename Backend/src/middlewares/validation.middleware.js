@@ -2,7 +2,7 @@ import ApiError from "../utils/ApiError.js";
 import registerValidationSchema from "../validations/user.validation.js";
 import videoPublishValidationSchema from "../validations/video.validation.js";
 
-const validateRegister = (req, res, next) => {
+const validateRegister = (req, _, next) => {
   const result = registerValidationSchema.safeParse(req.body);
 
   if (!result.success) {
@@ -23,4 +23,4 @@ const validateVideoPublish = (req, res, next) => {
   next();
 };
 
-export {validateRegister, validateVideoPublish};
+export { validateRegister, validateVideoPublish };

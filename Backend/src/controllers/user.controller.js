@@ -89,7 +89,7 @@ const registerUser = wrapAsync(async (req, res) => {
   }
 
   // response to frontend
-  res
+  return res
     .status(200)
     .json(new ApiResponse(200, createdUser, "User registered successfully!"));
 });
@@ -128,7 +128,7 @@ const loginUser = wrapAsync(async (req, res) => {
   );
 
   const cookieOptions = {
-    httpOnly: true,
+    httpOnly: true, 
     secure: true,
   };
   return res
